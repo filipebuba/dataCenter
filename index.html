@@ -288,6 +288,9 @@
                 border-radius: 10px;
                 font-size: 14px;
             }
+            #mobile-menu-btn {
+                display: flex !important;
+            }
             #controls-panel {
                 position: static;
                 left: 0;
@@ -330,9 +333,68 @@
                 padding: 0;
             }
         }
+
+        /* Botão de menu mobile */
+#mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    background: linear-gradient(45deg, #00ccff, #0099cc);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer;
+    gap: 10px;
+    align-items: center;
+}
+#mobile-panel-selector {
+    display: none;
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3001;
+    background: rgba(0,0,0,0.95);
+    border-radius: 12px;
+    padding: 10px 0;
+    min-width: 220px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+#mobile-panel-selector button {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: #00ff88;
+    font-size: 16px;
+    padding: 12px 0;
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid #222;
+}
+#mobile-panel-selector button:last-child {
+    border-bottom: none;
+}
     </style>
 </head>
 <body>
+    <!-- Botão de menu mobile -->
+    <button id="mobile-menu-btn" style="display:none;">
+        ☰ Menu
+    </button>
+    <div id="mobile-panel-selector">
+        <button onclick="showPanel('info-box')">Informações</button>
+        <button onclick="showPanel('status-monitor')">Status</button>
+        <button onclick="showPanel('controls-panel')">Controles</button>
+        <button onclick="hidePanels()">Fechar</button>
+    </div>
     <div id="loading">
         <div class="loading-spinner"></div>
         Carregando Data Center 3D...
@@ -1679,6 +1741,33 @@ Para mais detalhes, acesse o sistema de monitoramento.
 
             showMessage(details);
         }
+
+        // Mostrar/esconder painéis no mobile
+function showPanel(panelId) {
+    hidePanels();
+    document.getElementById(panelId).style.display = 'block';
+    // Para garantir que fique acima do menu
+    document.getElementById(panelId).style.zIndex = 3002;
+}
+function hidePanels() {
+    ['info-box', 'status-monitor', 'controls-panel'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    document.getElementById('mobile-panel-selector').style.display = 'none';
+}
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const mobilePanelSelector = document.getElementById('mobile-panel-selector');
+mobileMenuBtn.onclick = () => {
+    mobilePanelSelector.style.display = mobilePanelSelector.style.display === 'block' ? 'none' : 'block';
+};
+// Fecha painel ao clicar fora
+window.addEventListener('click', function(e) {
+    if (window.innerWidth > 700) return;
+    if (!mobilePanelSelector.contains(e.target) && e.target !== mobileMenuBtn) {
+        mobilePanelSelector.style.display = 'none';
+    }
+});
 
         // Inicialização quando a página carrega
         window.addEventListener('load', () => {
