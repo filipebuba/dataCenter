@@ -1750,21 +1750,21 @@ Para mais detalhes, acesse o sistema de monitoramento.
         }
 
         // Mostrar/esconder painéis no mobile
-function showPanel(panelId) {
-    hidePanels();
-    const el = document.getElementById(panelId);
-    if (el) {
-        el.style.display = panelId === 'controls-panel' ? 'flex' : 'block';
-        el.style.zIndex = 3002;
+    function showPanel(panelId) {
+     hidePanels();
+        const el = document.getElementById(panelId);
+        if (el) {
+            el.style.display = panelId === 'controls-panel' ? 'flex' : 'block';
+            el.style.zIndex = 3002;
+        }
     }
-}
-function hidePanels() {
-    ['info-box', 'status-monitor', 'controls-panel'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-    document.getElementById('mobile-panel-selector').style.display = 'none';
-}
+    function hidePanels() {
+        ['info-box', 'status-monitor', 'controls-panel'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        document.getElementById('mobile-panel-selector').style.display = 'none';
+    }
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 const mobilePanelSelector = document.getElementById('mobile-panel-selector');
 mobileMenuBtn.onclick = () => {
