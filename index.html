@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Center Campinas-SP - Modelo Técnico Detalhado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        #info-box {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 280px;
+            z-index: 1000;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        #info-box h2 {
+            color: #00ff88;
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #info-box p {
+            color: #cccccc;
+            margin: 0 0 12px 0;
+            font-size: 12px;
+        }
+
+        #status-monitor {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            min-width: 180px;
+            z-index: 1000;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        #status-monitor h3 {
+            color: #00ccff;
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #controls-panel {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px;
+            border-radius: 15px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .control-group h4 {
+            color: #00ff88;
+            margin: 0 0 8px 0;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            border: none;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 2px;
+            font-size: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #00cc66, #00aa44);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 255, 136, 0.3);
+        }
+
+        .emergency-btn {
+            background: linear-gradient(45deg, #dc2626, #b91c1c) !important;
+        }
+
+        .emergency-btn:hover {
+            background: linear-gradient(45deg, #b91c1c, #991b1b) !important;
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+        }
+
+        .spec-item, .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+        }
+
+        .spec-item:last-child, .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: #00ccff;
+            font-weight: 500;
+        }
+
+        .spec-value, .status-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .status-critical {
+            color: #ff4444 !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-warning {
+            color: #ffaa00 !important;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #message-box, #chat-box {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        #message-dialog, #chat-dialog {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #chat-dialog {
+            max-width: 600px;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-dialog h2 {
+            color: #00ff88;
+            margin: 0 0 15px 0;
+            text-align: center;
+        }
+
+        #chat-history {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #chat-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            color: white;
+            font-size: 14px;
+        }
+
+        #chat-input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        #chat-send-btn, #chat-close-btn, #message-close-btn {
+            background: linear-gradient(45deg, #00ccff, #0099cc);
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        #chat-close-btn, #message-close-btn {
+            background: linear-gradient(45deg, #666666, #444444);
+            width: 100%;
+        }
+
+        /* Loading indicator */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff88;
+            font-size: 18px;
+            z-index: 3000;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-radius: 50%;
+            border-top-color: #00ff88;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-spinner"></div>
+        Carregando Data Center 3D...
+    </div>
+
+    <div id="info-box">
+        <h2>🏢 Data Center Campinas-SP</h2>
+        <p>Modelo técnico detalhado com especificações reais</p>
+        <div id="info-content">
+            <div class="spec-item">
+                <span class="spec-label">Área Total:</span>
+                <span class="spec-value">72m² (9×8m)</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Racks:</span>
+                <span class="spec-value">17 unidades (42U)</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Servidores:</span>
+                <span class="spec-value">120 unidades</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">CPU:</span>
+                <span class="spec-value">AMD EPYC 9654</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">RAM Total:</span>
+                <span class="spec-value">120TB DDR5</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Storage:</span>
+                <span class="spec-value">320TB SDS</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Rede:</span>
+                <span class="spec-value">Leaf-Spine 100GbE</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Refrigeração:</span>
+                <span class="spec-value">7× Vertiv CRV</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-monitor">
+        <h3>📊 Status Tempo Real</h3>
+        <div class="status-item">
+            <span>CPU Médio:</span>
+            <span class="status-value" id="cpu-usage">45%</span>
+        </div>
+        <div class="status-item">
+            <span>Rede:</span>
+            <span class="status-value" id="network-usage">67%</span>
+        </div>
+        <div class="status-item">
+            <span>Temperatura:</span>
+            <span class="status-value" id="temperature">22°C</span>
+        </div>
+        <div class="status-item">
+            <span>UPS:</span>
+            <span class="status-value" id="ups-status">Online</span>
+        </div>
+        <div class="status-item">
+            <span>Solar:</span>
+            <span class="status-value" id="solar-power">15.2kW</span>
+        </div>
+        <div class="status-item">
+            <span>Uptime:</span>
+            <span class="status-value" id="uptime">99.98%</span>
+        </div>
+    </div>
+
+    <div id="controls-panel">
+        <div class="control-group">
+            <h4>Visualização</h4>
+            <button id="btn-toggle-rotation">🔄 Rotação</button>
+            <button id="btn-reset-camera">🎯 Reset</button>
+            <button id="btn-toggle-labels">👁️ Labels</button>
+        </div>
+        <div class="control-group">
+            <h4>Exportação</h4>
+            <button id="btn-screenshot">📸 Screenshot</button>
+            <button id="btn-export-specs">📋 Relatório</button>
+        </div>
+        <div class="control-group">
+            <h4>IA Assistant</h4>
+            <button id="btn-chat-ai">🤖 Chat IA</button>
+        </div>
+        <div class="control-group">
+            <h4>Sistema</h4>
+            <button id="btn-system-status">📊 Status</button>
+            <button id="btn-emergency" class="emergency-btn">🚨 Emergência</button>
+        </div>
+    </div>
+        <div style="position:fixed;bottom:20px;right:20px;z-index:2000;">
+            <button id="btn-export-gltf" style="background:linear-gradient(45deg,#00ccff,#0099cc);color:white;padding:12px 18px;border:none;border-radius:8px;font-size:14px;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;">
+            ⬇️ Exportar 3D (GLTF)
+            </button>
+        </div>
+    <div id="message-box" class="hidden">
+        <div id="message-dialog">
+            <p id="message-content"></p>
+            <button id="message-close-btn">OK</button>
+        </div>
+    </div>
+
+    <div id="chat-box" class="hidden">
+        <div id="chat-dialog">
+            <h2>🤖 Assistente Técnico IA</h2>
+            <div id="chat-history"></div>
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Pergunte sobre o data center...">
+                <button id="chat-send-btn">Enviar</button>
+            </div>
+            <button id="chat-close-btn">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let scene, camera, renderer, controls;
+        let racks = [];
+        let systemStatus = {
+            cpu: 45,
+            network: 67,
+            temperature: 22,
+            ups: 'Online',
+            solar: 15.2,
+            uptime: 99.98
+        };
+
+        // Função principal de inicialização
+        function init() {
+            console.log('🚀 Inicializando Data Center 3D...');
+            
+            try {
+                                // Verificar se Three.js está carregado
+                if (typeof THREE === 'undefined') {
+                    throw new Error('Three.js não foi carregado');
+                }
+
+                // Criar cena
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x1a1a2e);
+
+                // Configurar câmera
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(0, 60, 120);
+
+                // Configurar renderizador
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.body.appendChild(renderer.domElement);
+
+                // Configurar controles
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 0.5;
+                controls.target.set(0, 10, 0);
+
+                // Adicionar luzes
+                setupLighting();
+
+                // Criar data center
+                createDataCenter();
+
+                // Configurar controles da interface
+                setupControls();
+
+                // Iniciar monitoramento
+                startMonitoring();
+
+                // Iniciar loop de animação
+                animate();
+
+                // Remover loading
+                document.getElementById('loading').style.display = 'none';
+
+                console.log('✅ Data Center 3D inicializado com sucesso!');
+
+            } catch (error) {
+                console.error('❌ Erro na inicialização:', error);
+                document.getElementById('loading').innerHTML = '❌ Erro ao carregar. Verifique o console.';
+            }
+        }
+
+        function setupLighting() {
+            // Luz ambiente
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+
+            // Luz direcional principal
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Luzes pontuais para ambiente
+            const pointLight1 = new THREE.PointLight(0x00ff88, 0.3, 100);
+            pointLight1.position.set(30, 30, 30);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0x00ccff, 0.3, 100);
+            pointLight2.position.set(-30, 30, -30);
+            scene.add(pointLight2);
+        }
+
+        function createDataCenter() {
+            console.log('🏗️ Construindo data center...');
+
+            // Criar chão
+            const floorGeometry = new THREE.PlaneGeometry(200, 200);
+            const floorMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x2a2a3a,
+                transparent: true,
+                opacity: 0.8
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Criar sala principal
+            createMainRoom();
+
+            // Criar racks
+            createRacks();
+
+            // Criar sistemas de infraestrutura
+            createInfrastructure();
+
+            // Criar sistemas de energia
+            createPowerSystems();
+
+            // Criar sistemas de refrigeração
+            createCoolingSystems();
+
+            // Criar sistemas de segurança
+            createSecuritySystems();
+
+            // Criar cabeamento
+            createCabling();
+
+            console.log('✅ Data center construído com sucesso!');
+        }
+
+        function createMainRoom() {
+            // Paredes da sala principal (9x8m)
+            const wallMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x3a3a4a,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            // Parede frontal
+            const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallMaterial);
+            frontWall.position.set(0, 20, -40);
+            scene.add(frontWall);
+
+            // Parede traseira
+            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(90, 40), wallMaterial);
+            backWall.position.set(0, 20, 40);
+            backWall.rotation.y = Math.PI;
+            scene.add(backWall);
+
+            // Paredes laterais
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), wallMaterial);
+            leftWall.position.set(-45, 20, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            scene.add(leftWall);
+
+            const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), wallMaterial);
+            rightWall.position.set(45, 20, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Teto
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(90, 80), wallMaterial);
+            ceiling.position.set(0, 40, 0);
+            ceiling.rotation.x = Math.PI / 2;
+            scene.add(ceiling);
+
+            // Piso elevado
+            const raisedFloorGeometry = new THREE.PlaneGeometry(90, 80);
+            const raisedFloorMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            const raisedFloor = new THREE.Mesh(raisedFloorGeometry, raisedFloorMaterial);
+            raisedFloor.rotation.x = -Math.PI / 2;
+            raisedFloor.position.y = 0.9; // 90cm de altura
+            raisedFloor.receiveShadow = true;
+            scene.add(raisedFloor);
+        }
+
+        function createRacks() {
+            console.log('🗄️ Criando racks...');
+
+            const rackPositions = [
+                // Racks de processamento (01-08)
+                { x: -30, z: -20, type: 'processing', id: 1 },
+                { x: -10, z: -20, type: 'processing', id: 2 },
+                { x: 10, z: -20, type: 'processing', id: 3 },
+                { x: 30, z: -20, type: 'processing', id: 4 },
+                { x: -30, z: 0, type: 'processing', id: 5 },
+                { x: -10, z: 0, type: 'processing', id: 6 },
+                { x: 10, z: 0, type: 'processing', id: 7 },
+                { x: 30, z: 0, type: 'processing', id: 8 },
+
+                // Racks de armazenamento (09-12)
+                { x: -30, z: 20, type: 'storage', id: 9 },
+                { x: -10, z: 20, type: 'storage', id: 10 },
+                { x: 10, z: 20, type: 'storage', id: 11 },
+                { x: 30, z: 20, type: 'storage', id: 12 },
+
+                // Racks de rede (13-17)
+                { x: -20, z: 35, type: 'network', id: 13 },
+                { x: 0, z: 35, type: 'network', id: 14 },
+                { x: 20, z: 35, type: 'network', id: 15 },
+                { x: -10, z: 35, type: 'spine', id: 16 },
+                { x: 10, z: 35, type: 'spine', id: 17 }
+            ];
+
+            rackPositions.forEach(pos => {
+                const rack = createRack(pos.type, pos.id);
+                rack.position.set(pos.x, 1, pos.z);
+                scene.add(rack);
+                racks.push(rack);
+            });
+        }
+
+        function createRack(type, id) {
+            const rackGroup = new THREE.Group();
+
+            // Estrutura do rack
+            const rackGeometry = new THREE.BoxGeometry(6, 20, 8);
+            let rackMaterial;
+
+            switch (type) {
+                case 'processing':
+                    rackMaterial = new THREE.MeshLambertMaterial({ color: 0x2563eb });
+                    break;
+                case 'storage':
+                    rackMaterial = new THREE.MeshLambertMaterial({ color: 0x059669 });
+                    break;
+                case 'network':
+                    rackMaterial = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+                    break;
+                case 'spine':
+                    rackMaterial = new THREE.MeshLambertMaterial({ color: 0x7c3aed });
+                    break;
+                default:
+                    rackMaterial = new THREE.MeshLambertMaterial({ color: 0x374151 });
+            }
+
+            const rackMesh = new THREE.Mesh(rackGeometry, rackMaterial);
+            rackMesh.castShadow = true;
+            rackMesh.receiveShadow = true;
+            rackGroup.add(rackMesh);
+
+            // Adicionar equipamentos específicos
+            if (type === 'processing') {
+                // Servidores (15 por rack)
+                for (let i = 0; i < 15; i++) {
+                    const serverGeometry = new THREE.BoxGeometry(5.5, 1, 7);
+                    const serverMaterial = new THREE.MeshLambertMaterial({ 
+                        color: 0x1e40af,
+                        emissive: 0x001122,
+                        emissiveIntensity: 0.1
+                    });
+                    const server = new THREE.Mesh(serverGeometry, serverMaterial);
+                    server.position.y = -9 + (i * 1.2);
+                    rackMesh.add(server);
+
+                    // LEDs de status
+                    const ledGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+                    const ledMaterial = new THREE.MeshBasicMaterial({ 
+                        color: 0x00ff00,
+                        emissive: 0x00ff00,
+                        emissiveIntensity: 0.5
+                    });
+                    const led = new THREE.Mesh(ledGeometry, ledMaterial);
+                    led.position.set(2.5, 0, 3.5);
+                    server.add(led);
+                }
+            } else if (type === 'storage') {
+                // Appliances de storage (2 por rack)
+                for (let i = 0; i < 2; i++) {
+                    const storageGeometry = new THREE.BoxGeometry(5.5, 4, 7);
+                    const storageMaterial = new THREE.MeshLambertMaterial({ 
+                        color: 0x047857,
+                        emissive: 0x002211,
+                        emissiveIntensity: 0.1
+                    });
+                    const storage = new THREE.Mesh(storageGeometry, storageMaterial);
+                    storage.position.y = -6 + (i * 8);
+                    rackMesh.add(storage);
+                }
+            } else if (type === 'network' || type === 'spine') {
+                // Switches
+                const switchCount = type === 'spine' ? 2 : 4;
+                for (let i = 0; i < switchCount; i++) {
+                    const switchGeometry = new THREE.BoxGeometry(5.5, 2, 7);
+                    const switchMaterial = new THREE.MeshLambertMaterial({ 
+                        color: type === 'spine' ? 0x6d28d9 : 0xb91c1c,
+                        emissive: type === 'spine' ? 0x220044 : 0x440011,
+                        emissiveIntensity: 0.1
+                    });
+                    const switchMesh = new THREE.Mesh(switchGeometry, switchMaterial);
+                    switchMesh.position.y = -8 + (i * 4);
+                    rackMesh.add(switchMesh);
+                }
+            }
+
+            // Label do rack
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            context.fillStyle = '#000000';
+            context.fillRect(0, 0, 256, 64);
+            context.fillStyle = '#00ff88';
+            context.font = 'bold 24px Arial';
+            context.textAlign = 'center';
+            context.fillText(`RACK ${id.toString().padStart(2, '0')}`, 128, 25);
+            context.fillStyle = '#00ccff';
+            context.font = '16px Arial';
+            context.fillText(type.toUpperCase(), 128, 45);
+
+            const labelTexture = new THREE.CanvasTexture(canvas);
+            const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture });
+            const labelGeometry = new THREE.PlaneGeometry(4, 1);
+            const label = new THREE.Mesh(labelGeometry, labelMaterial);
+            label.position.set(0, 11, 4.1);
+            rackGroup.add(label);
+
+            return rackGroup;
+        }
+
+        function createInfrastructure() {
+            console.log('🏗️ Criando infraestrutura...');
+
+            // Sala de energia
+            const energyRoomGeometry = new THREE.BoxGeometry(30, 25, 25);
+            const energyRoomMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x4a5568,
+                transparent: true,
+                opacity: 0.6
+            });
+            const energyRoom = new THREE.Mesh(energyRoomGeometry, energyRoomMaterial);
+            energyRoom.position.set(-70, 12.5, 0);
+            scene.add(energyRoom);
+
+            // NOC (Network Operations Center)
+            const nocGeometry = new THREE.BoxGeometry(20, 25, 15);
+            const nocMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x2d3748,
+                transparent: true,
+                opacity: 0.7
+            });
+            const noc = new THREE.Mesh(nocGeometry, nocMaterial);
+            noc.position.set(55, 12.5, 25);
+                        scene.add(noc);
+
+            // Adicionar label para sala de energia
+            addTextLabel(energyRoom, 'SALA DE ENERGIA', 0, 15, 0, '#ffaa00');
+            
+            // Adicionar label para NOC
+            addTextLabel(noc, 'NOC', 0, 15, 0, '#00ccff');
+        }
+
+        function createPowerSystems() {
+            console.log('⚡ Criando sistemas de energia...');
+
+            // UPS Units (6 unidades de 50kVA)
+            const upsPositions = [
+                { x: -75, z: -10 }, { x: -65, z: -10 },
+                { x: -75, z: 0 }, { x: -65, z: 0 },
+                { x: -75, z: 10 }, { x: -65, z: 10 }
+            ];
+
+            upsPositions.forEach((pos, index) => {
+                const upsGeometry = new THREE.BoxGeometry(4, 8, 6);
+                const upsMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0x1f2937,
+                    emissive: 0x004400,
+                    emissiveIntensity: 0.1
+                });
+                const ups = new THREE.Mesh(upsGeometry, upsMaterial);
+                ups.position.set(pos.x, 4, pos.z);
+                ups.castShadow = true;
+                scene.add(ups);
+
+                // LED de status
+                const ledGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+                const ledMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x00ff00,
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 0.8
+                });
+                const led = new THREE.Mesh(ledGeometry, ledMaterial);
+                led.position.set(0, 4, 3.1);
+                ups.add(led);
+
+                addTextLabel(ups, `UPS ${index + 1}`, 0, 5, 0, '#00ff88');
+            });
+
+            // Geradores (2 unidades de 250kVA)
+            const generatorPositions = [
+                { x: -100, z: -20 },
+                { x: -100, z: 20 }
+            ];
+
+// (Removido bloco duplicado de painéis solares)
+
+            generatorPositions.forEach((pos, index) => {
+                const generatorGeometry = new THREE.BoxGeometry(12, 8, 8);
+                const generatorMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0x059669,
+                    emissive: 0x002200,
+                    emissiveIntensity: 0.1
+                });
+                const generator = new THREE.Mesh(generatorGeometry, generatorMaterial);
+                generator.position.set(pos.x, 4, pos.z);
+                generator.castShadow = true;
+                scene.add(generator);
+
+                addTextLabel(generator, `GERADOR ${index + 1}`, 0, 6, 0, '#00ff88');
+            });
+
+            // Painéis solares (grid 5x10)
+            const solarPanelGroup = new THREE.Group();
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const panelGeometry = new THREE.BoxGeometry(4, 0.2, 6);
+                    const panelMaterial = new THREE.MeshLambertMaterial({ 
+                        color: 0x1a1a2e,
+                        emissive: 0x000044,
+                        emissiveIntensity: 0.1
+                    });
+                    const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+                    panel.position.set(col * 5 - 22.5, 1, row * 7 - 14);
+                    panel.rotation.x = -Math.PI / 8; // Inclinação
+                    solarPanelGroup.add(panel);
+                }
+            }
+            solarPanelGroup.position.set(-150, 0, 0);
+            scene.add(solarPanelGroup);
+
+            addTextLabel(solarPanelGroup, 'PAINÉIS SOLARES (50 unidades)', 0, 8, 0, '#ffaa00');
+        }
+
+        function createCoolingSystems() {
+            console.log('❄️ Criando sistemas de refrigeração...');
+
+            // Unidades de refrigeração Vertiv CRV (7 unidades)
+            const coolingPositions = [
+                { x: -35, z: -10 }, { x: 35, z: -10 },
+                { x: -35, z: 10 }, { x: 35, z: 10 },
+                { x: 0, z: -30 }, { x: 0, z: 30 },
+                { x: 0, z: 0 } // Unidade redundante N+1
+            ];
+
+            coolingPositions.forEach((pos, index) => {
+                const coolingGeometry = new THREE.BoxGeometry(3, 15, 5);
+                const coolingMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0x0ea5e9,
+                    emissive: 0x002244,
+                    emissiveIntensity: 0.1
+                });
+                const cooling = new THREE.Mesh(coolingGeometry, coolingMaterial);
+                cooling.position.set(pos.x, 7.5, pos.z);
+                cooling.castShadow = true;
+                scene.add(cooling);
+
+                // Ventilador animado
+                const fanGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 8);
+                const fanMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+                const fan = new THREE.Mesh(fanGeometry, fanMaterial);
+                fan.position.set(0, 6, 2.6);
+                fan.userData.fan = true; // Marca para animação
+                cooling.add(fan);
+
+                addTextLabel(cooling, `CRV ${index + 1}`, 0, 9, 0, '#00ccff');
+            });
+
+            // Sensores de temperatura (distribuídos pelo teto)
+            for (let i = 0; i < 32; i++) {
+                const sensorGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+                const sensorMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x00ff00,
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 0.3
+                });
+                const sensor = new THREE.Mesh(sensorGeometry, sensorMaterial);
+                sensor.position.set(
+                    (Math.random() - 0.5) * 80,
+                    38,
+                    (Math.random() - 0.5) * 70
+                );
+                scene.add(sensor);
+            }
+        }
+
+        function createSecuritySystems() {
+            console.log('🔒 Criando sistemas de segurança...');
+
+            // Câmeras IP (16 unidades)
+            for (let i = 0; i < 16; i++) {
+                const cameraGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1, 8);
+                const cameraMaterial = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
+                const camera = new THREE.Mesh(cameraGeometry, cameraMaterial);
+                
+                // Posicionar nas paredes e cantos
+                const angle = (i / 16) * Math.PI * 2;
+                const radius = 40;
+                camera.position.set(
+                    Math.cos(angle) * radius,
+                    35,
+                    Math.sin(angle) * radius
+                );
+                camera.rotation.x = Math.PI / 2;
+                camera.castShadow = true;
+                scene.add(camera);
+
+                // LED de status
+                const ledGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const ledMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xff0000,
+                    emissive: 0xff0000,
+                    emissiveIntensity: 0.5
+                });
+                const led = new THREE.Mesh(ledGeometry, ledMaterial);
+                led.position.set(0, 0.6, 0);
+                camera.add(led);
+            }
+
+            // Sensores VESDA (detecção de fumaça)
+            for (let i = 0; i < 8; i++) {
+                const vesdaGeometry = new THREE.BoxGeometry(1, 0.5, 1);
+                const vesdaMaterial = new THREE.MeshLambertMaterial({ color: 0x7c2d12 });
+                const vesda = new THREE.Mesh(vesdaGeometry, vesdaMaterial);
+                vesda.position.set(
+                    (Math.random() - 0.5) * 80,
+                    39,
+                    (Math.random() - 0.5) * 70
+                );
+                scene.add(vesda);
+            }
+
+            // Bicos de supressão de incêndio
+            for (let i = 0; i < 12; i++) {
+                const nozzleGeometry = new THREE.ConeGeometry(0.3, 1, 8);
+                const nozzleMaterial = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+                const nozzle = new THREE.Mesh(nozzleGeometry, nozzleMaterial);
+                nozzle.position.set(
+                    (Math.random() - 0.5) * 80,
+                    39,
+                    (Math.random() - 0.5) * 70
+                );
+                nozzle.rotation.x = Math.PI;
+                scene.add(nozzle);
+            }
+        }
+
+        function createCabling() {
+            console.log('🔌 Criando cabeamento...');
+
+            // Canaletas de fibra óptica (laranja)
+            const fiberTrayMaterial = new THREE.MeshLambertMaterial({ color: 0xff6600 });
+            
+            // Canaleta principal horizontal
+            const mainTrayGeometry = new THREE.BoxGeometry(80, 1, 2);
+            const mainTray = new THREE.Mesh(mainTrayGeometry, fiberTrayMaterial);
+            mainTray.position.set(0, 35, 0);
+            scene.add(mainTray);
+
+            // Canaletas secundárias
+            for (let i = 0; i < 4; i++) {
+                const secondaryTrayGeometry = new THREE.BoxGeometry(2, 1, 60);
+                const secondaryTray = new THREE.Mesh(secondaryTrayGeometry, fiberTrayMaterial);
+                secondaryTray.position.set(-30 + (i * 20), 35, 0);
+                scene.add(secondaryTray);
+            }
+
+            // Eletrocalhas de cobre (amarelo)
+            const copperTrayMaterial = new THREE.MeshLambertMaterial({ color: 0xffff00 });
+            
+            // Eletrocalha principal
+            const copperTrayGeometry = new THREE.BoxGeometry(70, 1.5, 3);
+            const copperTray = new THREE.Mesh(copperTrayGeometry, copperTrayMaterial);
+            copperTray.position.set(0, 2, 0);
+            scene.add(copperTray);
+
+            // Cabos de exemplo (conectando alguns racks)
+            for (let i = 0; i < racks.length - 1; i++) {
+                if (i % 3 === 0) { // Conectar apenas alguns para não poluir
+                    const cable = createCable(
+                        racks[i].position,
+                        racks[i + 1].position,
+                        0x00ff00, // Verde para dados
+                        0.1
+                    );
+                    scene.add(cable);
+                }
+            }
+        }
+
+        function createCable(start, end, color, radius) {
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const length = direction.length();
+            
+            const cableGeometry = new THREE.CylinderGeometry(radius, radius, length, 8);
+            const cableMaterial = new THREE.MeshLambertMaterial({ color: color });
+            const cable = new THREE.Mesh(cableGeometry, cableMaterial);
+            
+            cable.position.copy(start).add(direction.multiplyScalar(0.5));
+            cable.position.y += 10; // Elevar para passar por cima
+            cable.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.normalize()
+            );
+            
+            return cable;
+        }
+
+        function addTextLabel(object, text, x, y, z, color = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 128;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            context.fillRect(0, 0, 512, 128);
+            
+            context.fillStyle = color;
+            context.font = 'bold 32px Arial';
+            context.textAlign = 'center';
+            context.fillText(text, 256, 80);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture,
+                transparent: true
+            });
+            const geometry = new THREE.PlaneGeometry(8, 2);
+            const label = new THREE.Mesh(geometry, material);
+            label.position.set(x, y, z);
+            object.add(label);
+        }
+
+        function setupControls() {
+            console.log('🎮 Configurando controles...');
+
+            // Toggle rotação
+            document.getElementById('btn-toggle-rotation').onclick = () => {
+                controls.autoRotate = !controls.autoRotate;
+                const btn = document.getElementById('btn-toggle-rotation');
+                btn.textContent = controls.autoRotate ? '⏸️ Pausar' : '▶️ Rotação';
+            };
+
+            // Reset câmera
+            document.getElementById('btn-reset-camera').onclick = () => {
+                camera.position.set(0, 60, 120);
+                controls.target.set(0, 10, 0);
+                controls.update();
+            };
+
+            // Toggle labels
+            let labelsVisible = true;
+            document.getElementById('btn-toggle-labels').onclick = () => {
+                labelsVisible = !labelsVisible;
+                scene.traverse((object) => {
+                    if (object.material && object.material.map && object.material.map.image) {
+                        object.visible = labelsVisible;
+                    }
+                });
+                const btn = document.getElementById('btn-toggle-labels');
+                btn.textContent = labelsVisible ? '👁️ Labels' : '🚫 Labels';
+            };
+
+                        // Screenshot
+            document.getElementById('btn-screenshot').onclick = () => {
+                const canvas = renderer.domElement;
+                const link = document.createElement('a');
+                link.download = `datacenter-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                showMessage('📸 Screenshot salvo com sucesso!');
+            };
+
+            // Exportar especificações
+            document.getElementById('btn-export-specs').onclick = () => {
+                const specs = generateSpecsReport();
+                const blob = new Blob([specs], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.download = `datacenter-specs-${new Date().toISOString().slice(0,10)}.txt`;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                showMessage('📋 Relatório de especificações exportado!');
+            };
+
+            // Chat IA
+            document.getElementById('btn-chat-ai').onclick = () => {
+                document.getElementById('chat-box').classList.remove('hidden');
+                document.getElementById('chat-dialog').classList.add('scale-100');
+            };
+
+            // Status do sistema
+            document.getElementById('btn-system-status').onclick = () => {
+                const status = generateSystemStatus();
+                showMessage(status);
+            };
+
+            // Botão de emergência
+            document.getElementById('btn-emergency').onclick = () => {
+                if (confirm('⚠️ ATENÇÃO: Ativar protocolo de emergência?\n\nIsso irá:\n- Parar todos os sistemas não críticos\n- Ativar modo de segurança\n- Notificar equipe de emergência')) {
+                    activateEmergencyProtocol();
+                }
+            };
+
+            // Controles do chat
+            setupChatControls();
+
+            // Controles de mensagem
+            document.getElementById('message-close-btn').onclick = () => {
+                document.getElementById('message-box').classList.add('hidden');
+            };
+
+            // Redimensionamento da janela
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setupChatControls() {
+            const chatInput = document.getElementById('chat-input');
+            const chatSendBtn = document.getElementById('chat-send-btn');
+            const chatCloseBtn = document.getElementById('chat-close-btn');
+            const chatHistory = document.getElementById('chat-history');
+
+            // Enviar mensagem
+            const sendMessage = async () => {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                // Adicionar mensagem do usuário
+                addChatMessage(message, 'user');
+                chatInput.value = '';
+
+                // Simular resposta da IA (aqui você integraria com uma API real)
+                addChatMessage('Processando sua pergunta...', 'system');
+                
+                setTimeout(() => {
+                    const response = generateAIResponse(message);
+                    // Remover mensagem de processamento
+                    const systemMessages = chatHistory.querySelectorAll('.chat-message.system');
+                    if (systemMessages.length > 0) {
+                        systemMessages[systemMessages.length - 1].remove();
+                    }
+                    addChatMessage(response, 'ai');
+                }, 1500);
+            };
+
+            chatSendBtn.onclick = sendMessage;
+            chatInput.onkeypress = (e) => {
+                if (e.key === 'Enter') sendMessage();
+            };
+
+            chatCloseBtn.onclick = () => {
+                document.getElementById('chat-box').classList.add('hidden');
+                document.getElementById('chat-dialog').classList.remove('scale-100');
+            };
+        }
+
+        function addChatMessage(message, type) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            messageDiv.textContent = message;
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function generateAIResponse(message) {
+            const responses = {
+                'temperatura': 'A temperatura atual do data center está em 22°C, dentro da faixa ideal de 18-27°C. O sistema de refrigeração Vertiv CRV está operando em modo N+1 com eficiência de 95%.',
+                'energia': 'O consumo atual é de 180kW. Temos 6 UPS de 50kVA cada (300kVA total) e 2 geradores de 250kVA. Os painéis solares estão gerando 15.2kW. Autonomia atual: 48h.',
+                'rede': 'A topologia Leaf-Spine está operando com 10 switches Cisco C9300 (Leaf) e 2 C9500 (Spine). Utilização média: 67%. Latência: <1ms. Todos os links 100GbE ativos.',
+                'segurança': 'Todos os sistemas de segurança operacionais: 16 câmeras Axis ativas, 6 leitores HID funcionais, sensores VESDA em monitoramento, sistema de supressão Novec pronto.',
+                'storage': 'Capacidade total: 320TB em SDS. Utilização: 45%. RAID 6 + Hot Spare ativo. Performance: 150K IOPS. Backup automático funcionando.',
+                'servidores': '120 servidores AMD EPYC 9654 (96 cores cada). RAM total: 120TB DDR5. CPU médio: 45%. Todos os servidores online e monitorados.',
+                'uptime': 'Uptime atual: 99.98%. Último downtime: 0 dias. SLA: 99.95%. Próxima manutenção programada: em 30 dias.',
+                'refrigeração': '7 unidades Vertiv CRV operando em N+1. Temperatura: 22°C. Umidade: 45%. Fluxo de ar otimizado com Hot/Cold Aisle Containment.'
+            };
+
+            const lowerMessage = message.toLowerCase();
+            for (const [key, response] of Object.entries(responses)) {
+                if (lowerMessage.includes(key)) {
+                    return response;
+                }
+            }
+
+            return `Sobre "${message}": Este data center em Campinas-SP possui 72m² com 17 racks, 120 servidores AMD EPYC, topologia Leaf-Spine, refrigeração N+1, e sistemas de segurança completos. Para informações específicas, pergunte sobre: temperatura, energia, rede, segurança, storage, servidores, uptime ou refrigeração.`;
+        }
+
+        function generateSpecsReport() {
+            return `
+DATA CENTER CAMPINAS-SP - RELATÓRIO TÉCNICO DETALHADO
+=====================================================
+Data: ${new Date().toLocaleString('pt-BR')}
+
+INFRAESTRUTURA FÍSICA:
+- Área Total: 72m² (9m × 8m)
+- Pé Direito: 4m
+- Piso Elevado: 90cm
+- Localização: Campinas-SP
+
+PROCESSAMENTO:
+- Racks: 8 unidades (01-08)
+- Servidores: 120 unidades (15 por rack)
+- CPU: AMD EPYC 9654 (96 cores, 2.4GHz base)
+- RAM Total: 120TB DDR5-4800 ECC
+- Storage Local: 240× NVMe 1.92TB (RAID 1)
+- Rede: Mellanox ConnectX-6 DX (2×100GbE por servidor)
+
+ARMAZENAMENTO:
+- Racks SDS: 4 unidades (09-12)
+- Appliances: 8 unidades (2 por rack, 4U cada)
+- HDDs: 160× SAS 16TB (RAID 6 + Hot Spare)
+- Cache: 32× NVMe 3.84TB
+- Conectividade: 32× Fibre Channel 32Gb/s
+- Capacidade Total: 320TB úteis
+
+REDE:
+- Topologia: Leaf-Spine
+- Leaf Switches: 10× Cisco Catalyst 9300
+- Spine Switches: 2× Cisco Catalyst 9500
+- Firewalls: 2× Palo Alto PA-3220
+- Roteadores: 2× Cisco ISR 4451
+- Backbone: 100GbE entre Leaf-Spine
+
+ENERGIA:
+- UPS: 6× APC Smart-UPS VT 50kVA
+- Geradores: 2× 250kVA (48h autonomia)
+- Painéis Solares: 50 unidades (20kWp)
+- Consumo Atual: 180kW
+- Eficiência: PUE 1.3
+
+REFRIGERAÇÃO:
+- Unidades: 7× Vertiv Liebert CRV (35kW cada)
+- Configuração: N+1 (6+1 redundante)
+- Sensores: 32× temperatura/umidade + 16× fluxo
+- Contenção: Hot/Cold Aisle
+- Temperatura Operacional: 18-27°C
+
+SEGURANÇA:
+- Câmeras: 16× Axis P3245-LVE (4K, PoE+)
+- Controle Acesso: 6× HID iCLASS SE
+- Detecção Movimento: 10× Bosch
+- Detecção Fumaça: 8× VESDA
+- Supressão Incêndio: 12× bicos Novec 1230
+
+CABEAMENTO:
+- Fibra Dados: OM4 (Servidor↔Leaf, Leaf↔Spine)
+- Gerenciamento: Cat6A (iDRAC, BMC, IPMI)
+- Organização: Canaletas dedicadas por tipo
+- Identificação: Código de cores padrão
+
+MONITORAMENTO:
+- Plataforma: Schneider EcoStruxure IT
+- Métricas: Tempo real (CPU, rede, temperatura, energia)
+- Alertas: SMS, email, dashboard
+- Relatórios: Automáticos (diário, semanal, mensal)
+
+LOCALIZAÇÃO ESTRATÉGICA:
+- Cidade: Campinas-SP
+- Vantagens: Dupla alimentação elétrica, proximidade backbone, mão de obra qualificada
+- Conectividade: Múltiplos ISPs, baixa latência
+
+CERTIFICAÇÕES E COMPLIANCE:
+- Tier III Design
+- ISO 27001 (Segurança da Informação)
+- ISO 14001 (Gestão Ambiental)
+- ANATEL (Telecomunicações)
+
+SUSTENTABILIDADE:
+- Energia Solar: 20kWp (redução 15% consumo)
+- Refrigeração Eficiente: Free-cooling quando possível
+- Reciclagem: 95% dos equipamentos descartados
+- Carbono Neutro: Compensação via créditos
+
+SLA E DISPONIBILIDADE:
+- Uptime Garantido: 99.95%
+- Uptime Atual: 99.98%
+- MTTR: < 4 horas
+- Suporte: 24×7×365
+
+CAPACIDADE DE EXPANSÃO:
+- Racks Adicionais: 8 posições disponíveis
+- Energia: 50% reserva para crescimento
+- Refrigeração: Escalável até 500kW
+- Rede: Portas livres para 200% expansão
+
+INVESTIMENTO TOTAL: R$ 8.5 milhões
+OPEX ANUAL: R$ 1.2 milhões
+ROI PROJETADO: 3.5 anos
+
+Relatório gerado automaticamente pelo sistema de monitoramento.
+Para dúvidas técnicas, contate: datacenter@empresa.com.br
+            `;
+        }
+
+        function generateSystemStatus() {
+            return `
+🔍 STATUS DETALHADO DO SISTEMA
+
+⚡ ENERGIA:
+• UPS 1-6: ✅ Online (Carga: 60%)
+• Gerador 1: ✅ Standby (Combustível: 95%)
+• Gerador 2: ✅ Standby (Combustível: 97%)
+• Solar: ✅ Gerando 15.2kW
+• Consumo Total: 180kW
+
+🌡️ REFRIGERAÇÃO:
+• CRV 1-6: ✅ Operacional
+• CRV 7: ✅ Standby (N+1)
+• Temperatura: 22°C ✅
+• Umidade: 45% ✅
+• Fluxo de Ar: Otimizado ✅
+
+🖥️ PROCESSAMENTO:
+• Servidores Online: 120/120 ✅
+• CPU Médio: 45% ✅
+• RAM Utilizada: 65% ✅
+• Storage: 45% (145TB/320TB) ✅
+
+🌐 REDE:
+• Leaf Switches: 10/10 ✅
+• Spine Switches: 2/2 ✅
+• Utilização: 67% ✅
+• Latência: <1ms ✅
+• Pacotes Perdidos: 0% ✅
+
+🔒 SEGURANÇA:
+• Câmeras: 16/16 ✅
+• Sensores: 18/18 ✅
+• Controle Acesso: ✅ Ativo
+• Detecção Incêndio: ✅ Ativo
+
+📊 PERFORMANCE:
+• Uptime: 99.98% ✅
+• IOPS: 150K ✅
+• Throughput: 12GB/s ✅
+• Backup: ✅ Atualizado
+
+🚨 ALERTAS: Nenhum
+⏰ Última Verificação: ${new Date().toLocaleString('pt-BR')}
+            `;
+        }
+
+        function activateEmergencyProtocol() {
+            console.log('🚨 PROTOCOLO DE EMERGÊNCIA ATIVADO');
+            
+            // Simular ações de emergência
+            showMessage(`
+🚨 PROTOCOLO DE EMERGÊNCIA ATIVADO
+
+✅ Ações Executadas:
+• Sistemas não críticos desligados
+• Modo de segurança ativado
+• Equipe de emergência notificada
+• Backup de energia ativado
+• Logs de emergência iniciados
+• Acesso restrito ativado
+
+📞 Contatos Acionados:
+• Gerente de TI: Notificado
+• Equipe de Segurança: A caminho
+• Bombeiros: Em standby
+• Fornecedor Energia: Informado
+
+⏰ Protocolo ativo desde: ${new Date().toLocaleString('pt-BR')}
+
+Para desativar, use o código de emergência.
+            `);
+
+            // Efeito visual de emergência
+            const originalBg = scene.background;
+            let flashCount = 0;
+            const flashInterval = setInterval(() => {
+                scene.background = flashCount % 2 === 0 ? new THREE.Color(0x660000) : originalBg;
+                flashCount++;
+                if (flashCount > 10) {
+                    clearInterval(flashInterval);
+                    scene.background = originalBg;
+                }
+            }, 500);
+        }
+
+        function startMonitoring() {
+                        console.log('📊 Iniciando monitoramento em tempo real...');
+
+            // Atualizar status a cada 3 segundos
+            setInterval(() => {
+                updateSystemStatus();
+                updateVisualEffects();
+            }, 3000);
+
+            // Atualizar métricas mais frequentemente
+            setInterval(() => {
+                updateMetrics();
+            }, 1000);
+        }
+
+        function updateSystemStatus() {
+            // Simular variações realistas nos valores
+            systemStatus.cpu = Math.max(20, Math.min(80, systemStatus.cpu + (Math.random() - 0.5) * 10));
+            systemStatus.network = Math.max(30, Math.min(90, systemStatus.network + (Math.random() - 0.5) * 15));
+            systemStatus.temperature = Math.max(18, Math.min(27, systemStatus.temperature + (Math.random() - 0.5) * 2));
+            systemStatus.solar = Math.max(0, Math.min(20, systemStatus.solar + (Math.random() - 0.5) * 3));
+
+            // Atualizar interface
+            document.getElementById('cpu-usage').textContent = `${Math.round(systemStatus.cpu)}%`;
+            document.getElementById('network-usage').textContent = `${Math.round(systemStatus.network)}%`;
+            document.getElementById('temperature').textContent = `${systemStatus.temperature.toFixed(1)}°C`;
+            document.getElementById('solar-power').textContent = `${systemStatus.solar.toFixed(1)}kW`;
+
+            // Aplicar classes de status baseadas nos valores
+            updateStatusClasses();
+        }
+
+        function updateStatusClasses() {
+            const cpuElement = document.getElementById('cpu-usage');
+            const networkElement = document.getElementById('network-usage');
+            const tempElement = document.getElementById('temperature');
+
+            // CPU
+            cpuElement.className = 'status-value';
+            if (systemStatus.cpu > 70) cpuElement.classList.add('status-warning');
+            if (systemStatus.cpu > 85) cpuElement.classList.add('status-critical');
+
+            // Rede
+            networkElement.className = 'status-value';
+            if (systemStatus.network > 80) networkElement.classList.add('status-warning');
+            if (systemStatus.network > 90) networkElement.classList.add('status-critical');
+
+            // Temperatura
+            tempElement.className = 'status-value';
+            if (systemStatus.temperature > 25 || systemStatus.temperature < 20) {
+                tempElement.classList.add('status-warning');
+            }
+            if (systemStatus.temperature > 27 || systemStatus.temperature < 18) {
+                tempElement.classList.add('status-critical');
+            }
+        }
+
+        function updateMetrics() {
+            // Atualizar uptime (simular incremento)
+            const uptimeElement = document.getElementById('uptime');
+            if (uptimeElement) {
+                const currentUptime = parseFloat(uptimeElement.textContent);
+                const newUptime = Math.min(99.99, currentUptime + 0.001);
+                uptimeElement.textContent = `${newUptime.toFixed(2)}%`;
+            }
+        }
+
+        function updateVisualEffects() {
+            // Animar ventiladores
+            scene.traverse((object) => {
+                if (object.userData.fan) {
+                    object.rotation.z += 0.5; // Rotação dos ventiladores
+                }
+            });
+
+            // Piscar LEDs baseado no status
+            scene.traverse((object) => {
+                if (object.material && object.material.emissive) {
+                    // Efeito de pulsação nos LEDs
+                    const time = Date.now() * 0.005;
+                    const intensity = 0.3 + Math.sin(time) * 0.2;
+                    object.material.emissiveIntensity = intensity;
+                }
+            });
+
+            // Atualizar cores baseadas no status do sistema
+            updateRackColors();
+        }
+
+        function updateRackColors() {
+            racks.forEach((rack, index) => {
+                const rackMesh = rack.children[0]; // Primeiro child é o mesh do rack
+                if (rackMesh && rackMesh.material) {
+                    // Simular carga baseada no CPU
+                    const load = systemStatus.cpu + (Math.random() - 0.5) * 20;
+                    
+                    if (load > 80) {
+                        rackMesh.material.emissive.setHex(0x440000); // Vermelho para alta carga
+                        rackMesh.material.emissiveIntensity = 0.2;
+                    } else if (load > 60) {
+                        rackMesh.material.emissive.setHex(0x444400); // Amarelo para carga média
+                        rackMesh.material.emissiveIntensity = 0.1;
+                    } else {
+                        rackMesh.material.emissive.setHex(0x004400); // Verde para carga baixa
+                        rackMesh.material.emissiveIntensity = 0.05;
+                    }
+                }
+            });
+        }
+
+        function showMessage(message) {
+            document.getElementById('message-content').innerHTML = message.replace(/\n/g, '<br>');
+            document.getElementById('message-box').classList.remove('hidden');
+            
+            // Auto-scroll para mensagens longas
+            const messageContent = document.getElementById('message-content');
+            messageContent.scrollTop = 0;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Atualizar controles
+            controls.update();
+            
+            // Renderizar cena
+            renderer.render(scene, camera);
+        }
+
+        // Event listeners para interação
+        function setupInteractions() {
+            // Raycaster para detecção de cliques
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            renderer.domElement.addEventListener('click', (event) => {
+                // Calcular posição do mouse normalizada
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                // Atualizar raycaster
+                raycaster.setFromCamera(mouse, camera);
+
+                // Verificar intersecções com racks
+                const intersects = raycaster.intersectObjects(racks, true);
+                
+                if (intersects.length > 0) {
+                    const clickedRack = intersects[0].object;
+                    let rackParent = clickedRack;
+                    
+                    // Encontrar o grupo pai do rack
+                    while (rackParent.parent && !racks.includes(rackParent)) {
+                        rackParent = rackParent.parent;
+                    }
+                    
+                    if (racks.includes(rackParent)) {
+                        const rackIndex = racks.indexOf(rackParent) + 1;
+                        showRackDetails(rackIndex);
+                    }
+                }
+            });
+        }
+
+        function showRackDetails(rackId) {
+            const rackTypes = {
+                1: 'Processamento', 2: 'Processamento', 3: 'Processamento', 4: 'Processamento',
+                5: 'Processamento', 6: 'Processamento', 7: 'Processamento', 8: 'Processamento',
+                9: 'Armazenamento', 10: 'Armazenamento', 11: 'Armazenamento', 12: 'Armazenamento',
+                13: 'Rede', 14: 'Rede', 15: 'Rede', 16: 'Spine', 17: 'Spine'
+            };
+
+            const rackSpecs = {
+                'Processamento': {
+                    equipamentos: '15× Servidores 2U',
+                    cpu: 'AMD EPYC 9654 (96 cores)',
+                    ram: '1TB DDR5 ECC por servidor',
+                    storage: '2× NVMe 1.92TB RAID1',
+                    rede: '2× 100GbE Mellanox',
+                    consumo: '12kW',
+                    status: 'Online'
+                },
+                'Armazenamento': {
+                    equipamentos: '2× SDS Appliances 4U',
+                    storage: '20× HDD 16TB + 4× NVMe 3.84TB',
+                    raid: 'RAID 6 + Hot Spare',
+                    conectividade: '4× FC 32Gb/s',
+                    capacidade: '80TB úteis',
+                    consumo: '8kW',
+                    status: 'Online'
+                },
+                'Rede': {
+                    equipamentos: '4× Switches Leaf',
+                    modelo: 'Cisco Catalyst 9300',
+                    portas: '48× 1GbE + 4× 100GbE',
+                    throughput: '3.6Tbps',
+                    latencia: '<1ms',
+                    consumo: '2kW',
+                    status: 'Online'
+                },
+                'Spine': {
+                    equipamentos: '2× Switches Spine + Firewall + Router',
+                    spine: 'Cisco Catalyst 9500',
+                    firewall: 'Palo Alto PA-3220',
+                    router: 'Cisco ISR 4451',
+                    throughput: '12.8Tbps',
+                    consumo: '4kW',
+                    status: 'Online'
+                }
+            };
+
+            const type = rackTypes[rackId];
+            const specs = rackSpecs[type];
+
+            let details = `
+🗄️ RACK ${rackId.toString().padStart(2, '0')} - ${type.toUpperCase()}
+
+📋 ESPECIFICAÇÕES:
+`;
+
+            Object.entries(specs).forEach(([key, value]) => {
+                const label = key.charAt(0).toUpperCase() + key.slice(1);
+                details += `• ${label}: ${value}\n`;
+            });
+
+            details += `
+📊 MÉTRICAS ATUAIS:
+• CPU: ${Math.round(systemStatus.cpu + (Math.random() - 0.5) * 20)}%
+• Rede: ${Math.round(systemStatus.network + (Math.random() - 0.5) * 15)}%
+• Temperatura: ${(systemStatus.temperature + (Math.random() - 0.5) * 2).toFixed(1)}°C
+• Uptime: 99.${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)}%
+
+🔧 ÚLTIMA MANUTENÇÃO: ${Math.floor(Math.random() * 30)} dias atrás
+⏰ PRÓXIMA MANUTENÇÃO: ${Math.floor(Math.random() * 60 + 30)} dias
+
+Para mais detalhes, acesse o sistema de monitoramento.
+            `;
+
+            showMessage(details);
+        }
+
+        // Inicialização quando a página carrega
+        window.addEventListener('load', () => {
+            console.log('🌐 Página carregada, inicializando...');
+            
+            // Pequeno delay para garantir que todos os recursos estejam carregados
+            setTimeout(() => {
+                init();
+                setupInteractions();
+            }, 500);
+        });
+
+        // Tratamento de erros globais
+        window.addEventListener('error', (event) => {
+            console.error('❌ Erro detectado:', event.error);
+            document.getElementById('loading').innerHTML = `
+                ❌ Erro ao carregar o sistema<br>
+                <small>Verifique o console para detalhes</small><br>
+                <button onclick="location.reload()" style="margin-top: 10px;">🔄 Recarregar</button>
+            `;
+        });
+
+        // Adicionar estilos CSS para as mensagens do chat
+        const chatStyles = `
+            .chat-message {
+                margin: 8px 0;
+                padding: 8px 12px;
+                border-radius: 8px;
+                max-width: 80%;
+                word-wrap: break-word;
+            }
+            .chat-message.user {
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                color: white;
+                margin-left: auto;
+                text-align: right;
+            }
+            .chat-message.ai {
+                background: linear-gradient(135deg, #059669, #047857);
+                color: white;
+                margin-right: auto;
+            }
+            .chat-message.system {
+                background: rgba(107, 114, 128, 0.3);
+                color: #d1d5db;
+                text-align: center;
+                font-style: italic;
+                margin: 4px auto;
+                max-width: 60%;
+            }
+        `;
+
+        // Adicionar estilos ao head
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = chatStyles;
+        document.head.appendChild(styleSheet);
+
+        console.log('🚀 Sistema Data Center 3D carregado e pronto!');
+
+            // Função para exportar a cena como GLTF
+    document.getElementById('btn-export-gltf').onclick = function () {
+        if (typeof THREE.GLTFExporter === 'undefined') {
+            alert('GLTFExporter não carregado!');
+            return;
+        }
+        const exporter = new THREE.GLTFExporter();
+        exporter.parse(
+            scene,
+            function (result) {
+                let output;
+                let mime;
+                let filename;
+                if (result instanceof ArrayBuffer) {
+                    output = result;
+                    mime = 'application/octet-stream';
+                    filename = 'datacenter3d.glb';
+                } else {
+                    output = JSON.stringify(result, null, 2);
+                    mime = 'application/gltf+json';
+                    filename = 'datacenter3d.gltf';
+                }
+                const blob = new Blob([output], { type: mime });
+                const link = document.createElement('a');
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+                document.body.removeChild(link);
+            },
+            // Opções: exportar em GLTF (JSON, não binário)
+            { binary: false }
+        );
+    };
+    </script>
+</body>
+</html>
+
+
+
+
