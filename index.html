@@ -277,12 +277,14 @@
 
                 /* ...existing code... */
         @media (max-width: 700px) {
-            #info-box, #status-monitor, #controls-panel {
+            #info-box, #status-monitor, #controls-panel,
+            #info-box *, #status-monitor *, #controls-panel * {
                 display: none !important;
             }
             #mobile-menu-btn {
                 display: flex !important;
             }
+        }
             #controls-panel {
                 position: static;
                 left: 0;
@@ -1733,9 +1735,11 @@ Para mais detalhes, acesse o sistema de monitoramento.
         // Mostrar/esconder painéis no mobile
 function showPanel(panelId) {
     hidePanels();
-    document.getElementById(panelId).style.display = 'block';
-    // Para garantir que fique acima do menu
-    document.getElementById(panelId).style.zIndex = 3002;
+    const el = document.getElementById(panelId);
+    if (el) {
+        el.style.display = panelId === 'controls-panel' ? 'flex' : 'block';
+        el.style.zIndex = 3002;
+    }
 }
 function hidePanels() {
     ['info-box', 'status-monitor', 'controls-panel'].forEach(id => {
