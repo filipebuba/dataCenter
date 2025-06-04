@@ -274,6 +274,63 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+                /* ...existing code... */
+        @media (max-width: 700px) {
+            #info-box, #status-monitor {
+                position: static;
+                max-width: 100%;
+                width: auto;
+                margin: 10px auto;
+                left: 0;
+                right: 0;
+                top: 0;
+                border-radius: 10px;
+                font-size: 14px;
+            }
+            #controls-panel {
+                position: static;
+                left: 0;
+                transform: none;
+                flex-direction: column;
+                gap: 8px;
+                border-radius: 10px;
+                width: 98vw;
+                margin: 10px auto;
+                padding: 8px;
+            }
+            .control-group {
+                min-width: unset;
+                width: 100%;
+            }
+            button {
+                width: 100%;
+                font-size: 13px;
+                padding: 10px 0;
+                margin: 4px 0;
+            }
+            #loading {
+                font-size: 15px;
+            }
+            #chat-dialog, #message-dialog {
+                max-width: 98vw;
+                padding: 10px;
+            }
+            #chat-history {
+                max-height: 150px;
+                font-size: 13px;
+            }
+            .spec-item, .status-item {
+                font-size: 13px;
+            }
+            div[style*="position:fixed"][style*="bottom:20px"] {
+                right: 5px !important;
+                bottom: 5px !important;
+                left: unset !important;
+                padding: 0;
+            }
+        }
+        /* ...existing code... */
     </style>
 </head>
 <body>
